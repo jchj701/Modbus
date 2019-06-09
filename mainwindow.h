@@ -31,10 +31,12 @@ private:
     Ui::MainWindow *ui;
     QModbusReply *lastRequest;
     QModbusClient *modbusDevice;
+    QTimer *timer;
 
     int listRow = 0;
     QModbusDataUnit readRequest() const;
     void readReady();
+
 };
 
 #endif // MAINWINDOW_H

@@ -8,6 +8,7 @@
 #include <QUrl>
 #include <QDebug>
 #include <QDateTime>
+#include <QTimer>
 enum ModbusConnection {
     Serial,
     Tcp
@@ -42,6 +43,8 @@ void MainWindow::on_pushButton_init_clicked()
 {
     //TCP modbus 初始化
     modbusDevice = new QModbusTcpClient(this);
+    timer = new QTimer(this);
+
     if (ui->lineEdit_port->text().isEmpty())
     {
         ui->lineEdit_port->setText(QLatin1Literal("127.0.0.1:502"));
@@ -65,8 +68,17 @@ void MainWindow::on_pushButton_init_clicked()
         qDebug() << "url.host = " << url.host() ;
         modbusDevice->setConnectionParameter(QModbusDevice::NetworkPortParameter, url.port());
         modbusDevice->setConnectionParameter(QModbusDevice::NetworkAddressParameter, url.host());
-//        modbusDevice->setTimeout(1000);
-//        modbusDevice->setNumberOfRetries(3);
+        modbusDevice->setTimeout(1000);
+        modbusDevice->setNumberOfRetries(3);
+
+
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, "Even");
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, 19200);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, 8);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, 1);
+
+        connect(timer, SIGNAL(timeout()), this, SLOT(on_pushButton_start_clicked()));
+
         qDebug() << "connectDevice()";
         if (!modbusDevice->connectDevice()) {
             statusBar()->showMessage(tr("Connect failed: ") + modbusDevice->errorString(), 5000);
@@ -101,12 +113,12 @@ void MainWindow::on_pushButton_start_clicked()
         qDebug() << "!modbusDevice";
         return;
     }
-    ui->listWidget_recive->clear ();
+    //ui->listWidget_recive->clear ();
     statusBar ()->clearMessage ();
 
     QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
     //if(auto *reply = modbusDevice->sendReadRequest (readRequest(), ui->serverEdit->value ()))
-     if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))
+     if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//0的话错误0x1
     {
         qDebug() << "in reply";
         if (!reply->isFinished())
@@ -117,6 +129,7 @@ void MainWindow::on_pushButton_start_clicked()
     else {
         statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
     }
+    timer->start(10);
 }
 
 void MainWindow::readReady()
@@ -139,14 +152,20 @@ void MainWindow::readReady()
 #endif
            QDateTime currentDateTime =QDateTime::currentDateTime();
            QString currentDate =currentDateTime.toString("hh:mm:ss.zzz");
-           const QString entry = tr("%1 - result:%2 %3 %4 %5\n").arg (currentDate)
+           const QString entry = tr("%1 - result:%2 %3 %4 %5").arg (currentDate)
                                  .arg (unit.value(0))
                                  .arg (unit.value(1))
                                  .arg (unit.value(2))
                                  .arg (unit.value(3));
-           ui->listWidget_recive->insertPlainText (entry);
-           qDebug() << listRow;
-           listRow++;
+          // ui->listWidget_recive->insertPlainText (entry);
+
+           //ui->listWidget_recive->insertItem (listRow, entry);
+           //ui->listWidget_recive->addItem (entry);
+           ui->listWidget_recive->append (entry);
+           //qDebug() << listRow;
+           //listRow++;
+
+
 
        } else if (reply->error() == QModbusDevice::ProtocolError) {
            statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
@@ -171,7 +190,7 @@ QModbusDataUnit MainWindow::readRequest() const
     Q_ASSERT(startAddress >= 0 && startAddress < 10);
 
     // do not go beyond 10 entries
-    int numberOfEntries = qMin(9, 10 - startAddress);
+    int numberOfEntries = qMin(10, 10 - startAddress);
     qDebug() << "numberOfEntries = " << numberOfEntries ;
     return QModbusDataUnit(table, startAddress, numberOfEntries);
 }
