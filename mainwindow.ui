@@ -40,6 +40,42 @@
      <string>日志</string>
     </property>
    </widget>
+   <widget class="QLineEdit" name="lineEdit_port">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>113</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="conect_info">
+    <property name="geometry">
+     <rect>
+      <x>320</x>
+      <y>50</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="serverEdit">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>60</y>
+      <width>46</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
    <widget class="QWidget" name="">
     <property name="geometry">
      <rect>
@@ -51,10 +87,10 @@
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QTextBrowser" name="textBrowser_recive"/>
+      <widget class="QTextBrowser" name="listWidget_recive"/>
      </item>
      <item>
-      <widget class="QTextBrowser" name="textBrowser_log"/>
+      <widget class="QListWidget" name="listWidget_log"/>
      </item>
     </layout>
    </widget>

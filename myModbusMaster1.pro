@@ -1,10 +1,12 @@
 #-------------------------------------------------
 #
 # Project created by QtCreator 2019-06-09T11:15:17
-#
+# Sorry，这么迟才开始，有点事情耽搁了
 #-------------------------------------------------
 
 QT       += core gui
+QT       += serialbus serialport widgets
+requires(qtConfig(combobox))
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
