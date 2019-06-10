@@ -9,6 +9,8 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QTimer>
+#include <QSerialPort>
+
 enum ModbusConnection {
     Serial,
     Tcp
@@ -20,13 +22,6 @@ MainWindow::MainWindow(QWidget *parent) :
     modbusDevice(nullptr)
 {
     ui->setupUi(this);
-    if (modbusDevice)
-    {
-            modbusDevice->disconnectDevice();
-            delete modbusDevice;
-            modbusDevice = nullptr;
-    }
-
 }
 
 MainWindow::~MainWindow()
@@ -72,10 +67,10 @@ void MainWindow::on_pushButton_init_clicked()
         modbusDevice->setNumberOfRetries(3);
 
 
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, "Even");
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, 19200);
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, 8);
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, 1);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, QSerialPort::MarkParity);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud115200);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, QSerialPort::Data8);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, QSerialPort::TwoStop);
 
         connect(timer, SIGNAL(timeout()), this, SLOT(on_pushButton_start_clicked()));
 
@@ -115,9 +110,10 @@ void MainWindow::on_pushButton_start_clicked()
     }
     //ui->listWidget_recive->clear ();
     statusBar ()->clearMessage ();
-
+#if 1
     QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
-    //if(auto *reply = modbusDevice->sendReadRequest (readRequest(), ui->serverEdit->value ()))
+//    if(auto *reply = modbusDevice->sendReadRequest (readUnit, ui->serverEdit->value ()))
+//    if(auto *reply = modbusDevice->sendReadRequest (readRequest(), ui->serverEdit->value ()))
      if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//0的话错误0x1
     {
         qDebug() << "in reply";
@@ -129,7 +125,30 @@ void MainWindow::on_pushButton_start_clicked()
     else {
         statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
     }
-    timer->start(10);
+    m_thread.start ();
+    flagRecive = true;
+    //timer->start(10);
+#endif
+#if 0
+    //不能使用while(1)
+    while(1)
+    {
+        QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
+         if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//0的话错误0x1
+        {
+            qDebug() << "in reply";
+            if (!reply->isFinished())
+                connect(reply, &QModbusReply::finished, this, &MainWindow::readReady);
+            else
+                delete reply; // broadcast replies return immediately
+        }
+        else {
+            statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+        }
+    }
+
+
+#endif
 }
 
 void MainWindow::readReady()
@@ -177,22 +196,6 @@ void MainWindow::readReady()
                                        arg(reply->error(), -1, 16), 5000);
        }
     reply->deleteLater();
-}
-
-QModbusDataUnit MainWindow::readRequest() const
-{
-    int t = 1;
-    const auto table =
-        static_cast<QModbusDataUnit::RegisterType> (t);
-//    const auto table =
-//            static_cast<QModbusDataUnit::RegisterType> (1);
-    int startAddress = 0;
-    Q_ASSERT(startAddress >= 0 && startAddress < 10);
-
-    // do not go beyond 10 entries
-    int numberOfEntries = qMin(10, 10 - startAddress);
-    qDebug() << "numberOfEntries = " << numberOfEntries ;
-    return QModbusDataUnit(table, startAddress, numberOfEntries);
 }
 
 

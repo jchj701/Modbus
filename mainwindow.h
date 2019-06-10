@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QModbusDataUnit>
+#include "mythread.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -20,6 +21,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    static bool flagRecive;
 
 private slots:
     void on_pushButton_init_clicked();
@@ -34,8 +36,11 @@ private:
     QTimer *timer;
 
     int listRow = 0;
+
     QModbusDataUnit readRequest() const;
     void readReady();
+
+    MyThread m_thread;
 
 };
 
