@@ -11,6 +11,8 @@
 #include <QTimer>
 #include <QSerialPort>
 
+#include "mythread.h"
+
 enum ModbusConnection {
     Serial,
     Tcp
@@ -38,7 +40,11 @@ void MainWindow::on_pushButton_init_clicked()
 {
     //TCP modbus 初始化
     modbusDevice = new QModbusTcpClient(this);
-    timer = new QTimer(this);
+//    timer = new QTimer(this);
+
+    m_objThread= new QThread();
+    m_obj = new ThreadObject();
+    m_obj->moveToThread(m_objThread);
 
     if (ui->lineEdit_port->text().isEmpty())
     {
@@ -72,7 +78,7 @@ void MainWindow::on_pushButton_init_clicked()
         modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, QSerialPort::Data8);
         modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, QSerialPort::TwoStop);
 
-        connect(timer, SIGNAL(timeout()), this, SLOT(on_pushButton_start_clicked()));
+//        connect(timer, SIGNAL(timeout()), this, SLOT(on_pushButton_start_clicked()));
 
         qDebug() << "connectDevice()";
         if (!modbusDevice->connectDevice()) {
@@ -108,27 +114,22 @@ void MainWindow::on_pushButton_start_clicked()
         qDebug() << "!modbusDevice";
         return;
     }
-    //ui->listWidget_recive->clear ();
-    statusBar ()->clearMessage ();
-#if 1
-    QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
-//    if(auto *reply = modbusDevice->sendReadRequest (readUnit, ui->serverEdit->value ()))
-//    if(auto *reply = modbusDevice->sendReadRequest (readRequest(), ui->serverEdit->value ()))
-     if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//0的话错误0x1
-    {
-        qDebug() << "in reply";
-        if (!reply->isFinished())
-            connect(reply, &QModbusReply::finished, this, &MainWindow::readReady);
-        else
-            delete reply; // broadcast replies return immediately
-    }
-    else {
-        statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
-    }
-    m_thread.start ();
+
+
+    connect(m_objThread,&QThread::finished,m_objThread,&QObject::deleteLater);
+    connect(m_objThread,&QThread::finished,m_obj,&QObject::deleteLater);
+
+    connect(this,&MainWindow::startObjThreadWork1, m_obj, &ThreadObject::runSomeBigWork1);
+    connect(m_obj,&ThreadObject::progress, this, &MainWindow::showData);
+
+
+    m_objThread->start();
     flagRecive = true;
+    emit startObjThreadWork1();
+//    m_objThread->wait ();
     //timer->start(10);
-#endif
+
+
 #if 0
     //不能使用while(1)
     while(1)
@@ -150,6 +151,30 @@ void MainWindow::on_pushButton_start_clicked()
 
 #endif
 }
+
+void MainWindow::showData()
+{
+    statusBar ()->clearMessage ();
+    qDebug() << "in showData";
+#if 1
+    QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
+//    if(auto *reply = modbusDevice->sendReadRequest (readUnit, ui->serverEdit->value ()))
+//    if(auto *reply = modbusDevice->sendReadRequest (readRequest(), ui->serverEdit->value ()))
+     if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//0的话错误0x1
+    {
+        qDebug() << "in reply";
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &MainWindow::readReady);
+        else
+            delete reply; // broadcast replies return immediately
+    }
+    else {
+        statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+    }
+
+#endif
+}
+
 
 void MainWindow::readReady()
 {
@@ -181,6 +206,7 @@ void MainWindow::readReady()
            //ui->listWidget_recive->insertItem (listRow, entry);
            //ui->listWidget_recive->addItem (entry);
            ui->listWidget_recive->append (entry);
+           m_objThread->quit ();
            //qDebug() << listRow;
            //listRow++;
 

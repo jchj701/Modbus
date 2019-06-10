@@ -1,9 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "mythread.h"
+
 #include <QMainWindow>
 #include <QModbusDataUnit>
-#include "mythread.h"
+#include <QThread>
 
 QT_BEGIN_NAMESPACE
 
@@ -22,13 +24,15 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     static bool flagRecive;
-
+signals:
+    void startObjThreadWork1();
 private slots:
     void on_pushButton_init_clicked();
 
     void onStateChanged(int state);
     void on_pushButton_start_clicked();
 
+    void showData();
 private:
     Ui::MainWindow *ui;
     QModbusReply *lastRequest;
@@ -40,8 +44,11 @@ private:
     QModbusDataUnit readRequest() const;
     void readReady();
 
-    MyThread m_thread;
+    ThreadObject *m_obj;
+    QThread *m_objThread;
 
 };
+
+
 
 #endif // MAINWINDOW_H
