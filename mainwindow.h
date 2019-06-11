@@ -40,6 +40,9 @@ private slots:
     void showData();
 
     void showFrequence();
+
+    void on_pushButton_destroy_clicked();
+
 private:
     Ui::MainWindow *ui;
     QModbusReply *lastRequest;

@@ -32,16 +32,6 @@ MainWindow::MainWindow(QWidget *parent) :
     m_objThread= new QThread();
     m_obj = new ThreadObject();
     m_obj->moveToThread(m_objThread);
-
-    if (ui->lineEdit_port->text().isEmpty())
-    {
-        ui->lineEdit_port->setText(QLatin1Literal("127.0.0.1:502"));
-    }
-
-    connect(modbusDevice, &QModbusClient::errorOccurred, [this](QModbusDevice::Error) {
-        statusBar()->showMessage(modbusDevice->errorString(), 5000);
-    });
-
 }
 
 MainWindow::~MainWindow()
@@ -53,6 +43,9 @@ MainWindow::~MainWindow()
     delete modbusDevice;
     delete ui;
     delete timer;
+    m_objThread->quit ();
+    m_objThread->wait ();
+    qDebug() << "~MainWindow()";
 }
 
 /*
@@ -66,9 +59,20 @@ void MainWindow::on_pushButton_init_clicked()
         qDebug() << "modbusDevice init fault";
         return;
     }
-
-    ui->pushButton_start->setEnabled (true);
+    ui->pushButton_init->setEnabled (false);
     ui->pushButton_destroy->setEnabled (true);
+    ui->pushButton_start->setEnabled (true);
+    ui->pushButton_stop->setEnabled (false);
+
+    //设置默认地址
+    if (ui->lineEdit_port->text().isEmpty())
+    {
+        ui->lineEdit_port->setText(QLatin1Literal("127.0.0.1:502"));
+    }
+
+    connect(modbusDevice, &QModbusClient::errorOccurred, [this](QModbusDevice::Error) {
+        statusBar()->showMessage(modbusDevice->errorString(), 5000);
+    });
 
     statusBar ()->clearMessage ();
     if(modbusDevice->state () != QModbusDevice::ConnectedState)
@@ -111,6 +115,7 @@ void MainWindow::on_pushButton_init_clicked()
         //处理连接时断开的操作
         modbusDevice->disconnectDevice();
         qDebug() << "disconnectDevice()";
+        ui->listWidget_log->addItem (tr("disconnect Device"));
     }
 }
 
@@ -123,6 +128,8 @@ void MainWindow::on_pushButton_start_clicked()
         return;
     }
 
+    ui->pushButton_init->setEnabled (false);
+    ui->pushButton_destroy->setEnabled (true);
     ui->pushButton_start->setEnabled (false);
     ui->pushButton_stop->setEnabled (true);
 
@@ -138,15 +145,23 @@ void MainWindow::on_pushButton_start_clicked()
 
 void MainWindow::on_pushButton_stop_clicked()
 {
-    ui->pushButton_stop->setEnabled (false);
+    ui->pushButton_init->setEnabled (false);
+    ui->pushButton_destroy->setEnabled (true);
     ui->pushButton_start->setEnabled (true);
+    ui->pushButton_stop->setEnabled (false);
 
     flagRecive = false;
     timer->stop ();
-    m_objThread->quit ();
-    m_objThread->wait ();
+//    m_objThread->quit ();
+//    m_objThread->wait ();
 }
 
+void MainWindow::on_pushButton_destroy_clicked()
+{
+    ui->pushButton_destroy->setEnabled (false);
+    ui->pushButton_init->setEnabled (true);
+    ui->pushButton_start->setEnabled (false);
+}
 
 /*
  * function
@@ -155,9 +170,28 @@ void MainWindow::onStateChanged(int state)
 {
     qDebug() << "in onStateChanged";
     if (state == QModbusDevice::ConnectedState)
+    {
         ui->conect_info->setText(tr("Connect Now"));
+        ui->listWidget_log->addItem (tr("Connect Now"));
+    }
     else if (state == QModbusDevice::UnconnectedState)
+    {
         ui->conect_info->setText(tr("Disconnect Now"));
+        ui->listWidget_log->addItem (tr("Disconnect Now"));
+        if(ui->radioButton->isChecked ())
+        {
+            //开始重连
+            qDebug() << "in is check reconnect";
+            ui->listWidget_log->addItem (tr("reconnect in  onStateChanged"));
+            qDebug() << modbusDevice->state ();
+            ui->radioButton->setChecked (false);
+            on_pushButton_init_clicked ();
+            ui->pushButton_init->setEnabled (false);
+            ui->pushButton_destroy->setEnabled (true);
+            ui->pushButton_start->setEnabled (false);
+            ui->pushButton_stop->setEnabled (true);
+        }
+    }
 }
 
 void MainWindow::showData()
@@ -219,16 +253,24 @@ void MainWindow::readReady()
            statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
                                        arg(reply->errorString()).
                                        arg(reply->error(), -1, 16), 5000);
+           if(ui->radioButton->isChecked ())
+           {
+               //重新连接
+               on_pushButton_init_clicked ();
+               ui->pushButton_init->setEnabled (false);
+               ui->pushButton_destroy->setEnabled (true);
+               ui->pushButton_start->setEnabled (false);
+               ui->pushButton_stop->setEnabled (true);
+           }
 #endif
        }
     reply->deleteLater();
-
 }
-
-
 
 void MainWindow::showFrequence()
 {
     ui->label_frequence->setText (tr("帧频：%1").arg (listRow));
     listRow = 0;
 }
+
+

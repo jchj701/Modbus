@@ -18,6 +18,7 @@ ThreadObject::~ThreadObject ()
 
 void ThreadObject::runSomeBigWork1()
 {
+    QMutexLocker locker(&m_stopMutex);
     int i = 0;
     while(MainWindow::flagRecive)
     {
@@ -31,5 +32,4 @@ void ThreadObject::runSomeBigWork1()
             Sleep(10);
         }
     }
-
 }
