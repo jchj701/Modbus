@@ -69,8 +69,8 @@
    <widget class="QSpinBox" name="serverEdit">
     <property name="geometry">
      <rect>
-      <x>450</x>
-      <y>60</y>
+      <x>510</x>
+      <y>50</y>
       <width>46</width>
       <height>21</height>
      </rect>
@@ -113,6 +113,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_destroy">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>destroy</string>
        </property>
@@ -120,6 +123,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_start">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>start</string>
        </property>
@@ -127,6 +133,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_stop">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>stop</string>
        </property>

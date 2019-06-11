@@ -6,9 +6,6 @@
 bool MainWindow::flagRecive = false;
 
 ThreadObject ::ThreadObject (QObject *parent):QObject(parent)
-  ,m_runCount(100)
-  ,m_runCount2(std::numeric_limits<int>::max())
-  ,m_isStop(true)
 {
 
 }
@@ -21,18 +18,17 @@ ThreadObject::~ThreadObject ()
 
 void ThreadObject::runSomeBigWork1()
 {
-//    qDebug() << "in run1";
-//    emit progress ();
     int i = 0;
     while(MainWindow::flagRecive)
     {
-        emit progress ();
-//        qDebug() << "in run";
+//        emit progress ();
+
         if(i++ == 100)
         {
-//            emit progress ();
+            //emit信号，槽函数接收数据
+            emit progress ();
             i = 0;
-            Sleep(500);
+            Sleep(10);
         }
     }
 

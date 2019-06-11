@@ -27,30 +27,35 @@ public:
 
 signals:
     void startObjThreadWork1();
+
 private slots:
     void on_pushButton_init_clicked();
 
-    void onStateChanged(int state);
     void on_pushButton_start_clicked();
 
-    void showData();
     void on_pushButton_stop_clicked();
+
+    void onStateChanged(int state);
+
+    void showData();
 
     void showFrequence();
 private:
     Ui::MainWindow *ui;
     QModbusReply *lastRequest;
     QModbusClient *modbusDevice;
-    QTimer *timer;
 
-    int listRow = 0;
-    qlonglong m_time = 0;
-    QModbusDataUnit readRequest() const;
-    void readReady();
+    QTimer *timer;
 
     ThreadObject *m_obj;
     QThread *m_objThread;
 
+    int listRow = 0;
+    qlonglong m_time = 0;
+
+    QModbusDataUnit readRequest() const;
+
+    void readReady();
 
 };
 
