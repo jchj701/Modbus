@@ -19,7 +19,7 @@ signals:
     void progress();
 public slots:
     void runSomeBigWork1();
-    //void runSomeBigWork2();
+
 private:
     int m_runCount;
     int m_runCount2;

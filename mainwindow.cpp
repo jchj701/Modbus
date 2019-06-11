@@ -40,7 +40,7 @@ void MainWindow::on_pushButton_init_clicked()
 {
     //TCP modbus 初始化
     modbusDevice = new QModbusTcpClient(this);
-//    timer = new QTimer(this);
+    timer = new QTimer(this);
 
     m_objThread= new QThread();
     m_obj = new ThreadObject();
@@ -67,18 +67,27 @@ void MainWindow::on_pushButton_init_clicked()
         const QUrl url = QUrl::fromUserInput(ui->lineEdit_port->text());
         qDebug() << "url.port = " << url.port() ;
         qDebug() << "url.host = " << url.host() ;
+        ui->listWidget_log->addItem (tr("端口号：%1").arg(url.port ()));
+        ui->listWidget_log->addItem (tr("地址：%1").arg(url.host ()));
         modbusDevice->setConnectionParameter(QModbusDevice::NetworkPortParameter, url.port());
         modbusDevice->setConnectionParameter(QModbusDevice::NetworkAddressParameter, url.host());
         modbusDevice->setTimeout(1000);
         modbusDevice->setNumberOfRetries(3);
 
 
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, QSerialPort::MarkParity);
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud115200);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, QSerialPort::EvenParity);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud115200);//Baud1200
         modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, QSerialPort::Data8);
         modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, QSerialPort::TwoStop);
 
-//        connect(timer, SIGNAL(timeout()), this, SLOT(on_pushButton_start_clicked()));
+
+        connect(m_objThread,&QThread::finished,m_objThread,&QObject::deleteLater);
+        connect(m_objThread,&QThread::finished,m_obj,&QObject::deleteLater);
+
+        connect(this,&MainWindow::startObjThreadWork1, m_obj, &ThreadObject::runSomeBigWork1);
+        connect(m_obj,&ThreadObject::progress, this, &MainWindow::showData);
+
+        connect(timer, SIGNAL(timeout()), this, SLOT(showFrequence()));
 
         qDebug() << "connectDevice()";
         if (!modbusDevice->connectDevice()) {
@@ -115,19 +124,11 @@ void MainWindow::on_pushButton_start_clicked()
         return;
     }
 
-
-    connect(m_objThread,&QThread::finished,m_objThread,&QObject::deleteLater);
-    connect(m_objThread,&QThread::finished,m_obj,&QObject::deleteLater);
-
-    connect(this,&MainWindow::startObjThreadWork1, m_obj, &ThreadObject::runSomeBigWork1);
-    connect(m_obj,&ThreadObject::progress, this, &MainWindow::showData);
-
-
     m_objThread->start();
     flagRecive = true;
     emit startObjThreadWork1();
-//    m_objThread->wait ();
-    //timer->start(10);
+
+    timer->start(1000);
 
 
 #if 0
@@ -155,14 +156,14 @@ void MainWindow::on_pushButton_start_clicked()
 void MainWindow::showData()
 {
     statusBar ()->clearMessage ();
-    qDebug() << "in showData";
+//    qDebug() << "in showData";
 #if 1
     QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
 //    if(auto *reply = modbusDevice->sendReadRequest (readUnit, ui->serverEdit->value ()))
 //    if(auto *reply = modbusDevice->sendReadRequest (readRequest(), ui->serverEdit->value ()))
      if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//0的话错误0x1
     {
-        qDebug() << "in reply";
+//        qDebug() << "in reply";
         if (!reply->isFinished())
             connect(reply, &QModbusReply::finished, this, &MainWindow::readReady);
         else
@@ -170,6 +171,7 @@ void MainWindow::showData()
     }
     else {
         statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+        delete reply;
     }
 
 #endif
@@ -181,7 +183,7 @@ void MainWindow::readReady()
     auto reply = qobject_cast<QModbusReply *>(sender());
     if (!reply)
         return;
-    qDebug() << "in readReady()";
+//    qDebug() << "in readReady()";
 
     if (reply->error() == QModbusDevice::NoError) {
            const QModbusDataUnit unit = reply->result();
@@ -196,6 +198,7 @@ void MainWindow::readReady()
 #endif
            QDateTime currentDateTime =QDateTime::currentDateTime();
            QString currentDate =currentDateTime.toString("hh:mm:ss.zzz");
+
            const QString entry = tr("%1 - result:%2 %3 %4 %5").arg (currentDate)
                                  .arg (unit.value(0))
                                  .arg (unit.value(1))
@@ -206,11 +209,9 @@ void MainWindow::readReady()
            //ui->listWidget_recive->insertItem (listRow, entry);
            //ui->listWidget_recive->addItem (entry);
            ui->listWidget_recive->append (entry);
-           m_objThread->quit ();
-           //qDebug() << listRow;
-           //listRow++;
 
-
+//           qDebug() << "append ok";
+           listRow++;
 
        } else if (reply->error() == QModbusDevice::ProtocolError) {
            statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
@@ -225,3 +226,16 @@ void MainWindow::readReady()
 }
 
 
+
+void MainWindow::on_pushButton_stop_clicked()
+{
+    flagRecive = false;
+    m_objThread->quit ();
+    m_objThread->wait ();
+}
+
+void MainWindow::showFrequence()
+{
+    ui->label_frequence->setText (tr("帧频：%1").arg (listRow));
+    listRow = 0;
+}
