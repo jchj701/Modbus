@@ -161,6 +161,8 @@ void MainWindow::on_pushButton_destroy_clicked()
     ui->pushButton_destroy->setEnabled (false);
     ui->pushButton_init->setEnabled (true);
     ui->pushButton_start->setEnabled (false);
+
+
 }
 
 /*
@@ -248,11 +250,17 @@ void MainWindow::readReady()
            statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
                                        arg(reply->errorString()).
                                        arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+           ui->listWidget_log->addItem (tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                        arg(reply->errorString()).
+                                        arg(reply->rawResult().exceptionCode(), -1, 16));
        } else {
            qDebug() << "error else";
            statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
                                        arg(reply->errorString()).
                                        arg(reply->error(), -1, 16), 5000);
+           ui->listWidget_log->addItem (tr("Read response error: %1 (code: 0x%2)").
+                                        arg(reply->errorString()).
+                                        arg(reply->error(), -1, 16));
            if(ui->radioButton->isChecked ())
            {
                //重新连接
