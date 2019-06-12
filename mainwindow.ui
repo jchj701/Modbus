@@ -193,7 +193,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="comboBox">
+      <widget class="QComboBox" name="comboBox_chooseMode">
        <item>
         <property name="text">
          <string>TCP</string>

@@ -53,12 +53,14 @@ MainWindow::~MainWindow()
  */
 void MainWindow::on_pushButton_init_clicked()
 {
+
     if(!modbusDevice)
     {
         //初始化失败
         qDebug() << "modbusDevice init fault";
         return;
     }
+
     ui->pushButton_init->setEnabled (false);
     ui->pushButton_destroy->setEnabled (true);
     ui->pushButton_start->setEnabled (true);
@@ -158,11 +160,12 @@ void MainWindow::on_pushButton_stop_clicked()
 
 void MainWindow::on_pushButton_destroy_clicked()
 {
+
+    on_pushButton_stop_clicked ();
+    modbusDevice->disconnectDevice();
     ui->pushButton_destroy->setEnabled (false);
     ui->pushButton_init->setEnabled (true);
     ui->pushButton_start->setEnabled (false);
-
-
 }
 
 /*
@@ -281,4 +284,22 @@ void MainWindow::showFrequence()
     listRow = 0;
 }
 
+//void MainWindow::on_comboBox_chooseMode_currentIndexChanged(int index)
+//{
+//    if (modbusDevice) {
+//        modbusDevice->disconnectDevice();
+//        delete modbusDevice;
+//        modbusDevice = nullptr;
+//    }
+
+//    auto type = static_cast<ModbusConnection> (index);
+
+//    if (type == Serial) {
+//        modbusDevice = new QModbusRtuSerialMaster(this);
+//    } else if (type == Tcp) {
+//        modbusDevice = new QModbusTcpClient(this);
+//        if (ui->lineEdit_port->text().isEmpty())
+//            ui->lineEdit_port->setText(QLatin1Literal("127.0.0.1:502"));
+//    }
+//}
 
