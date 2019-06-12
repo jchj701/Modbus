@@ -23,6 +23,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
     static bool flagRecive;
 
 signals:
@@ -43,6 +44,8 @@ private slots:
 
     void on_pushButton_destroy_clicked();
 
+    void on_comboBox_chooseMode_currentIndexChanged(int index);
+
 private:
     Ui::MainWindow *ui;
     QModbusReply *lastRequest;
@@ -59,6 +62,7 @@ private:
     QModbusDataUnit readRequest() const;
 
     void readReady();
+
 
 };
 

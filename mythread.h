@@ -16,8 +16,10 @@ public:
 
 signals:
     void progress();
+
 public slots:
     void runSomeBigWork1();
+
 private:
     QMutex m_stopMutex;
 };
