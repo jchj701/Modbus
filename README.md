@@ -1,8 +1,15 @@
 # Modbus
 - 4Leaper
 
+##### 多线程
+QThread
+MyThread
+moveToThread
 
-##### 思考了一天人生。
+- 存在问题：跨类调用成员函数
+从slot_thread_doWork1()中需要调用复杂任务，即analyseData与readReady，该部分逻辑需要调整，当前未加入
+
+##### 思考了一天人生。20190615
 
 ##### 明天有其他面试，故周末完善
 1. 线程中对接受数据进行控制，而不是现在的通过线程来发送信号的形式控制数据收发
