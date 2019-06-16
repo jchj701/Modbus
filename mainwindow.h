@@ -1,13 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "mythread.h"
-
 #include <QMainWindow>
-#include <QModbusDataUnit>
-#include <QThread>
-
-QT_BEGIN_NAMESPACE
+#include "mythread.h"
 
 class QModbusClient;
 class QModbusReply;
@@ -23,28 +18,23 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    void test();
     static bool flagRecive;
+    static void test1();
 
 signals:
-    void startObjThreadWork1();
+    void startThread();
+    void sig_analyseData();
+    void sig_readReady();
 
 private slots:
     void on_pushButton_init_clicked();
-
-    void on_pushButton_start_clicked();
-
-    void on_pushButton_stop_clicked();
-
     void onStateChanged(int state);
-
-    void showData();
-
-    void showFrequence();
-
+    void on_pushButton_start_clicked();
+    void on_pushButton_stop_clicked();
     void on_pushButton_destroy_clicked();
-
     void on_comboBox_chooseMode_currentIndexChanged(int index);
+
 
 private:
     Ui::MainWindow *ui;
@@ -53,19 +43,13 @@ private:
 
     QTimer *timer;
 
-    ThreadObject *m_obj;
-    QThread *m_objThread;
+    MyThread *m_thread;
+    QThread *m_qThread;
 
     int listRow = 0;
-    qlonglong m_time = 0;
-
-    QModbusDataUnit readRequest() const;
-
+    void analyseData();
     void readReady();
-
-
+    void showFrequence();
 };
-
-
 
 #endif // MAINWINDOW_H

@@ -29,10 +29,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     timer = new QTimer(this);
 
-    m_objThread= new QThread();
-    m_obj = new ThreadObject();
-    m_obj->moveToThread(m_objThread);
-}//构造函数
+    m_qThread = new QThread();
+    m_thread = new MyThread();
+    m_thread->moveToThread (m_qThread);
+}
 
 MainWindow::~MainWindow()
 {
@@ -43,8 +43,9 @@ MainWindow::~MainWindow()
     delete modbusDevice;
     delete ui;
     delete timer;
-    m_objThread->quit ();
-    m_objThread->wait ();
+
+    m_qThread->quit ();
+    m_qThread->wait ();
     qDebug() << "~MainWindow()";
 }
 
@@ -99,20 +100,19 @@ void MainWindow::on_pushButton_init_clicked()
         }
 
         //销毁线程
-        connect(m_objThread,&QThread::finished,m_objThread,&QObject::deleteLater);
-        connect(m_objThread,&QThread::finished,m_obj,&QObject::deleteLater);
+        connect(m_qThread, &QThread::finished, m_qThread, &QObject::deleteLater);
+        connect(m_qThread, &QThread::finished, m_thread, &QObject::deleteLater);
 
-        //启用线程任务 runSomeBigWork1
-        connect(this,&MainWindow::startObjThreadWork1, m_obj, &ThreadObject::runSomeBigWork1);
-
-        //收到runSomeBigWork1中的信号，启用接收函数 showData，已调整位置至start按钮
-//        connect(m_obj,&ThreadObject::progress, this, &MainWindow::showData);
+        //线程事件
+        connect(this, SIGNAL (startThread()), m_thread, SLOT (slot_thread_doWork1()));
 
         //启用记频率定时器
         connect(timer, SIGNAL(timeout()), this, SLOT(showFrequence()));
 
         //连接状态显示
         connect(modbusDevice, &QModbusClient::stateChanged, this, &MainWindow::onStateChanged);
+
+        connect (this, SIGNAL (sig_analyseData), this, SLOT (analyseData ()));
 
         if (!modbusDevice->connectDevice()) {
             statusBar()->showMessage(tr("Connect failed: ") + modbusDevice->errorString(), 5000);
@@ -125,7 +125,6 @@ void MainWindow::on_pushButton_init_clicked()
         ui->listWidget_log->addItem (tr("disconnect Device"));
     }
 }//初始化按钮，根据不同模式启用不同设置，启用各种信号槽
-
 
 void MainWindow::on_pushButton_start_clicked()
 {
@@ -140,18 +139,17 @@ void MainWindow::on_pushButton_start_clicked()
     ui->pushButton_start->setEnabled (false);
     ui->pushButton_stop->setEnabled (true);
 
-    m_objThread->start();
+    m_qThread->start();
 
     flagRecive = true;
 
     timer->start(1000);
 
-    //启用接收事件
-    connect(m_obj,&ThreadObject::progress, this, &MainWindow::showData);
-
-    emit startObjThreadWork1();
+    emit startThread();
+    qDebug("emit startThread done");
 
 }//开启线程、定时器、接收flag，emit信号
+
 
 void MainWindow::on_pushButton_stop_clicked()
 {
@@ -160,13 +158,11 @@ void MainWindow::on_pushButton_stop_clicked()
     ui->pushButton_start->setEnabled (true);
     ui->pushButton_stop->setEnabled (false);
 
-    disconnect(m_obj,&ThreadObject::progress, this, &MainWindow::showData);
-
     flagRecive = false;
     timer->stop ();
-//    m_objThread->quit ();
-//    m_objThread->wait ();
+
 }//停止按钮
+
 
 void MainWindow::on_pushButton_destroy_clicked()
 {
@@ -181,14 +177,12 @@ void MainWindow::on_pushButton_destroy_clicked()
     ui->pushButton_start->setEnabled (false);
 
     ui->listWidget_log->clear ();
+
 }//destroy按钮，断开连接
 
-/*
- * function
- */
 void MainWindow::onStateChanged(int state)
 {
-    qDebug() << "in onStateChanged";
+    qDebug() << "in onStateChanged:" << state;
     if (state == QModbusDevice::ConnectedState)
     {
         ui->conect_info->setText(tr("Connect Now"));
@@ -214,20 +208,25 @@ void MainWindow::onStateChanged(int state)
     }
 }//更改连接状态
 
-void MainWindow::showData()
+void MainWindow::test()
+{
+    qDebug("in test");
+}
+
+void MainWindow::analyseData()
 {
     statusBar ()->clearMessage ();
-//    qDebug() << "in showData";
-
-#if 1
+    qDebug("in analyseData");
     //HoldingRegister 类型
     QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters,0,10);
 
     if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1))//客户端id
     {
-//        qDebug() << "in reply";
         if (!reply->isFinished())
+        {
             connect(reply, &QModbusReply::finished, this, &MainWindow::readReady);
+        }
+
         else
             delete reply; // broadcast replies return immediately
     }
@@ -235,11 +234,11 @@ void MainWindow::showData()
         qDebug() << "read error in showdata";
         statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
     }
-#endif
 }//设置客户端，启用信号槽，用来显示接收到的数据
 
 void MainWindow::readReady()
 {
+#if 1
     auto reply = qobject_cast<QModbusReply *>(sender());
     if (!reply)
         return;
@@ -247,7 +246,7 @@ void MainWindow::readReady()
     if (reply->error() == QModbusDevice::NoError) {
            const QModbusDataUnit unit = reply->result();
 
-#if 1
+
            QDateTime currentDateTime =QDateTime::currentDateTime();
            QString currentDate =currentDateTime.toString("hh:mm:ss.zzz");
 
@@ -260,7 +259,7 @@ void MainWindow::readReady()
 
            ui->listWidget_recive->append (entry);
 
-//           qDebug() << "append ok";
+           qDebug() << "append ok";
            listRow++;
 
        } else if (reply->error() == QModbusDevice::ProtocolError) {
@@ -288,9 +287,10 @@ void MainWindow::readReady()
                ui->pushButton_start->setEnabled (false);
                ui->pushButton_stop->setEnabled (true);
            }
-#endif
+
        }
     reply->deleteLater();
+#endif
 }//收到信息的处理与显示函数
 
 void MainWindow::showFrequence()
@@ -321,3 +321,7 @@ void MainWindow::on_comboBox_chooseMode_currentIndexChanged(int index)
     }
 }//更改通信模式，TCP于RTU的切换，默认使用TCP
 
+void MainWindow::test1()
+{
+    qDebug("in test1");
+}

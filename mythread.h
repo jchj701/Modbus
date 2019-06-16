@@ -6,22 +6,16 @@
 #include <QObject>
 #include <QMutex>
 
-class ThreadObject : public QObject
+class MyThread : public QObject
 {
     Q_OBJECT
-
 public:
-    explicit ThreadObject (QObject* parent = nullptr);
-    ~ThreadObject ();
-
+    explicit MyThread(QObject *parent = nullptr);
+    ~MyThread ();
 signals:
-    void progress();
-
+    void sig_thread_start();
 public slots:
-    void runSomeBigWork1();
-
-private:
-    QMutex m_stopMutex;
+    void slot_thread_doWork1();
 };
 
 #endif // MYTHREAD_H
